@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d2a4a">
+<title>Billetterie TOP 14 – Vérification du billet</title>
+<style>
+  :root {
+    --navy: #0d2a4a; --sky: #6fb7e3; --paper: #f4f8fb; --red: #e01b24; --ink: #101820;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--paper); color: var(--ink);
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* Étape 1 : fausse page officielle */
+  #start { height: 100%; display: flex; flex-direction: column; }
+  .bar { background: var(--navy); color: #fff; padding: 1rem 1.25rem; font-weight: 700; font-size: 1.05rem; }
+  .bar small { display: block; font-weight: 400; opacity: .75; font-size: .8rem; margin-top: .15rem; }
+  .card { margin: 1.5rem 1.25rem; background: #fff; border-radius: 12px; padding: 1.25rem; border: 1px solid #d6e4ef; }
+  .card h1 { font-size: 1.3rem; margin: 0 0 .25rem; color: var(--navy); }
+  .card p { margin: .2rem 0; color: #4a5d70; font-size: .95rem; }
+  .card .num { font-family: ui-monospace, Menlo, monospace; color: var(--ink); margin-top: .75rem; }
+  .status { margin: 0 1.25rem; color: #4a5d70; font-size: .9rem; }
+  #go {
+    margin: 1.5rem 1.25rem; padding: 1.1rem; border: 0; border-radius: 12px;
+    background: var(--navy); color: #fff; font-size: 1.1rem; font-weight: 700;
+  }
+
+  /* Étape 2 : chaos */
+  #chaos { display: none; position: fixed; inset: 0; background: #000; overflow: hidden; }
+  body.infected #start { display: none; }
+  body.infected #chaos { display: block; animation: shake .12s infinite; }
+  @keyframes shake {
+    0% { transform: translate(0,0); } 25% { transform: translate(-6px,4px); }
+    50% { transform: translate(5px,-5px); } 75% { transform: translate(-4px,-3px); } 100% { transform: translate(3px,5px); }
+  }
+  .flash { position: absolute; inset: 0; background: var(--red); opacity: 0; animation: flash .5s infinite; }
+  @keyframes flash { 0%, 100% { opacity: 0; } 50% { opacity: .55; } }
+  .big {
+    position: absolute; left: 0; right: 0; top: 38%; text-align: center; color: #fff;
+    font-size: clamp(2rem, 11vw, 4rem); font-weight: 900; line-height: 1; text-shadow: 3px 3px 0 var(--red);
+    padding: 0 1rem;
+  }
+  .big span { display: block; font-size: .35em; font-weight: 600; margin-top: .6rem; text-shadow: none; }
+  .pop {
+    position: absolute; width: min(78vw, 300px); background: #fff; color: var(--ink);
+    border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.6); overflow: hidden;
+    font-size: .85rem; animation: pop .15s ease-out;
+  }
+  .pop b { display: block; background: var(--red); color: #fff; padding: .45rem .7rem; font-size: .8rem; }
+  .pop p { margin: 0; padding: .6rem .7rem; }
+  @keyframes pop { from { transform: scale(.3); } to { transform: scale(1); } }
+  .log {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30%; padding: .75rem;
+    font-family: ui-monospace, Menlo, monospace; font-size: .72rem; color: #3f3;
+    background: rgba(0,0,0,.75); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .prog { position: absolute; left: 1rem; right: 1rem; top: 62%; color: #fff; font-size: .85rem; }
+  .prog div { height: 10px; background: #333; border-radius: 5px; margin-top: .35rem; overflow: hidden; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--red); }
+
+  /* Étape 3 : révélation */
+  #reveal {
+    display: none; position: fixed; inset: 0; background: var(--navy); color: #fff;
+    padding: calc(2rem + env(safe-area-inset-top, 0px)) 1.5rem 2rem; text-align: center;
+    flex-direction: column; justify-content: center; align-items: center;
+  }
+  body.revealed #chaos, body.revealed #start { display: none; }
+  body.revealed #reveal { display: flex; animation: fadein .6s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  #reveal .emoji { font-size: 4.5rem; }
+  #reveal h2 { font-size: 2rem; margin: .5rem 0 1rem; }
+  #reveal p { font-size: 1.1rem; line-height: 1.5; max-width: 26rem; margin: .3rem 0; color: #d7e9f6; }
+  #reveal .match { margin-top: 1.5rem; padding: 1rem 1.25rem; border: 2px solid var(--sky); border-radius: 12px; }
+  #reveal .match strong { display: block; font-size: 1.3rem; color: #fff; }
+</style>
+</head>
+<body>
+
+<section id="start">
+  <div class="bar">Billetterie officielle TOP 14<small>Vérification du billet électronique</small></div>
+  <div class="card">
+    <h1>RC Vannes – Aviron Bayonnais</h1>
+    <p>Samedi 5 décembre 2026 · 16h35</p>
+    <p>Stade de la Rabine, Vannes</p>
+    <p>Tribune · Porte d’entrée Stade</p>
+    <p class="num">N° 3923456767893</p>
+  </div>
+  <p class="status">Billet trouvé. Appuyez sur le bouton pour activer votre place.</p>
+  <button id="go" type="button">Activer mon billet</button>
+</section>
+
+<section id="chaos" aria-hidden="true">
+  <div class="flash"></div>
+  <div class="big">⚠️ VIRUS DÉTECTÉ<span>Ne fermez pas cette page</span></div>
+  <div class="prog">Copie de vos photos en cours… <span id="pct">0</span> %<div><i id="bar"></i></div></div>
+  <div class="log" id="log"></div>
+</section>
+
+<section id="reveal">
+  <div class="emoji">😂</div>
+  <h2>T’as eu peur, hein ?</h2>
+  <p>Ton téléphone va très bien. Par contre, toi, tu vas au rugby.</p>
+  <div class="match">
+    <strong>RC Vannes – Aviron Bayonnais</strong>
+    <p>Samedi 5 décembre 2026, 16h35</p>
+    <p>Stade de la Rabine, tribune</p>
+  </div>
+  <p style="margin-top:1.5rem">Bon match !</p>
+</section>
+
+<script>
+(function () {
+  var msgs = [
+    ["ALERTE SÉCURITÉ", "Trojan.Billet.TOP14 a été installé sur votre téléphone."],
+    ["ACCÈS REFUSÉ", "Votre appareil est verrouillé par un tiers."],
+    ["SAUVEGARDE", "Envoi de vos contacts vers un serveur inconnu…"],
+    ["ERREUR 0x80070", "Mémoire corrompue. Redémarrage impossible."],
+    ["CAMÉRA", "La caméra frontale est activée."],
+    ["BANQUE", "Tentative de connexion à votre application bancaire."],
+    ["MESSAGES", "Envoi de « je t’aime » à tous vos contacts…"],
+    ["BATTERIE", "Surchauffe détectée : 74 °C."],
+    ["GALERIE", "Publication de vos photos sur Facebook…"],
+    ["SYSTÈME", "Suppression de WhatsApp en cours."],
+    ["WI-FI", "Partage de votre position en direct."],
+    ["VIRUS", "47 menaces trouvées. 0 supprimée."]
+  ];
+  var logs = [
+    "> bypass firewall… OK", "> dump contacts.db… OK", "> inject payload.apk", "> camera.front = ON",
+    "> upload DCIM/ 1.2 Go", "> sms.sendAll()", "> root access granted", "> gps.track(live)",
+    "> wallet.read()… OK", "> encrypt /storage", "> notify hacker@anonymous", "> rm -rf /whatsapp"
+  ];
+  var chaos = document.getElementById("chaos");
+  var log = document.getElementById("log");
+  var pct = document.getElementById("pct");
+  var bar = document.getElementById("bar");
+  var timers = [];
+  var audio = null;
+
+  function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+
+  function beep(freq, dur) {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = "square"; o.frequency.value = freq;
+      g.gain.value = 0.08;
+      o.connect(g); g.connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + dur);
+    } catch (e) {}
+  }
+
+  function popup() {
+    var m = msgs[Math.floor(Math.random() * msgs.length)];
+    var el = document.createElement("div");
+    el.className = "pop";
+    el.innerHTML = "<b>⚠️ " + m[0] + "</b><p>" + m[1] + "</p>";
+    el.style.left = Math.random() * (window.innerWidth - 220) + "px";
+    el.style.top = Math.random() * (window.innerHeight * 0.75) + "px";
+    el.style.transform = "rotate(" + (Math.random() * 16 - 8) + "deg)";
+    chaos.appendChild(el);
+    if (chaos.querySelectorAll(".pop").length > 14) chaos.querySelector(".pop").remove();
+  }
+
+  function addLog() {
+    var line = document.createElement("div");
+    line.textContent = logs[Math.floor(Math.random() * logs.length)];
+    log.appendChild(line);
+    if (log.children.length > 14) log.firstChild.remove();
+  }
+
+  function start() {
+    document.body.classList.add("infected");
+    vibrate([400, 100, 400, 100, 800]);
+    var p = 0, high = true;
+    timers.push(setInterval(popup, 280));
+    timers.push(setInterval(addLog, 180));
+    timers.push(setInterval(function () { vibrate([300, 80, 300]); }, 1100));
+    timers.push(setInterval(function () { beep(high ? 880 : 620, 0.18); high = !high; }, 300));
+    timers.push(setInterval(function () {
+      p = Math.min(100, p + Math.floor(Math.random() * 7) + 2);
+      pct.textContent = p; bar.style.width = p + "%";
+    }, 250));
+    setTimeout(stop, 10000);
+  }
+
+  function stop() {
+    timers.forEach(clearInterval);
+    vibrate(0);
+    document.body.classList.remove("infected");
+    document.body.classList.add("revealed");
+    beep(523, 0.15); setTimeout(function () { beep(659, 0.15); }, 160); setTimeout(function () { beep(784, 0.3); }, 320);
+  }
+
+  document.getElementById("go").addEventListener("click", start);
+})();
+</script>
+</body>
+</html>
